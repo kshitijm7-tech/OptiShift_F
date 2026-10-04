@@ -1,0 +1,6 @@
+{
+  "name": "OptiShift — Algorithmic Workforce Scheduler",
+  "description": "Constraint-based workforce scheduling platform that automatically generates cost-efficient, fair, and feasible employee schedules while dynamically adapting to availability and approved leave.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
