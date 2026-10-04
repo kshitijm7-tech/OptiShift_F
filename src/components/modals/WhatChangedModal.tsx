@@ -2,7 +2,14 @@ import React from 'react';
 import { useSchedule } from '../../context/ScheduleContext';
 
 export const WhatChangedModal: React.FC = () => {
-  const { showWhatChangedModal, setShowWhatChangedModal, changelog } = useSchedule();
+  const {
+    showWhatChangedModal,
+    setShowWhatChangedModal,
+    changelog,
+    metrics,
+    comparison,
+    backendConnected
+  } = useSchedule();
 
   if (!showWhatChangedModal) return null;
 
@@ -34,6 +41,33 @@ export const WhatChangedModal: React.FC = () => {
           <span className="text-xs font-bold text-[#141b2b] uppercase tracking-wider">
             Schedule updated because:
           </span>
+          {backendConnected ? (
+            <ul className="flex flex-col gap-3 text-xs text-[#404940] leading-relaxed">
+              <li className="flex items-start gap-2.5">
+                <span className="material-symbols-outlined text-[18px] text-[#166534] shrink-0 mt-0.5">swap_horiz</span>
+                <span>
+                  The live MILP solver rebuilt the week: <strong>{metrics.totalShiftsFilled} of {metrics.totalShiftsRequired} shifts staffed ({metrics.coveragePercent}% coverage)</strong>.
+                </span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="material-symbols-outlined text-[18px] text-[#166534] shrink-0 mt-0.5">savings</span>
+                <span>
+                  Staff cost <strong>₹{metrics.totalCost.toLocaleString('en-IN')}</strong>
+                  {comparison.costDelta < 0 && (
+                    <> — <strong>₹{Math.abs(comparison.costDelta).toLocaleString('en-IN')} saved</strong> vs the manual baseline</>
+                  )}
+                  {comparison.costDelta >= 0 && <> vs the manual baseline</>}.
+                  Overtime: <strong>{metrics.overtimeHours}h</strong>.
+                </span>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="material-symbols-outlined text-[18px] text-[#2d6a48] shrink-0 mt-0.5">balance</span>
+                <span>
+                  Workload fairness score <strong>{metrics.fairnessScore}</strong> across <strong>{metrics.activeStaffCount} active staff</strong>.
+                </span>
+              </li>
+            </ul>
+          ) : (
           <ul className="flex flex-col gap-3 text-xs text-[#404940] leading-relaxed">
             <li className="flex items-start gap-2.5">
               <span className="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">event_busy</span>
@@ -52,6 +86,7 @@ export const WhatChangedModal: React.FC = () => {
               <span>Zero extra hours or overtime added (Staff cost stayed strictly at <strong>₹42,680</strong>).</span>
             </li>
           </ul>
+          )}
         </div>
 
         {/* Dynamic Changelog Tags */}

@@ -8,7 +8,8 @@ export const Header: React.FC = () => {
     setShowModePickerModal,
     triggerReoptimize,
     isOptimizing,
-    setToastMessage
+    setToastMessage,
+    backendConnected
   } = useSchedule();
 
   return (
@@ -39,6 +40,19 @@ export const Header: React.FC = () => {
         <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#e9edff] text-[#2d6a48] text-[11px] font-semibold">
           <span className="w-1.5 h-1.5 rounded-full bg-[#166534] animate-pulse"></span>
           {operatingMode === 'demo' ? 'Mode 1: Demo Showcase' : 'Mode 2: Custom Optimization'}
+        </span>
+
+        {/* Backend connection status */}
+        <span
+          title={backendConnected ? 'Live data from the OptiShift solver API' : 'Backend unreachable — showing bundled demo data'}
+          className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
+            backendConnected
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : 'bg-amber-50 text-amber-800 border border-amber-200'
+          }`}
+        >
+          <span className={`w-1.5 h-1.5 rounded-full ${backendConnected ? 'bg-emerald-600' : 'bg-amber-500'}`}></span>
+          {backendConnected ? 'Live Solver' : 'Demo Data'}
         </span>
       </div>
 

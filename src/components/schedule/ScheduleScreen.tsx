@@ -34,20 +34,19 @@ export const ScheduleScreen: React.FC = () => {
     }
   };
 
-  const runProgressSimulation = () => {
+  const runProgressSimulation = async () => {
+    if (isOptimizing) return;
     setShowProgressModal(true);
-    setProgressWidth(30);
-    setTimeout(() => {
-      setProgressWidth(70);
-      setTimeout(() => {
-        setProgressWidth(100);
-        setTimeout(() => {
-          setShowProgressModal(false);
-          setScheduleScenario(3);
-          setShowWhatChangedModal(true);
-        }, 600);
-      }, 700);
-    }, 600);
+    setProgressWidth(70);
+    // Apply the real solver (live MILP API, local fallback offline).
+    // The modal below only opens when the schedule actually changed.
+    const applied = await triggerReoptimize();
+    setProgressWidth(100);
+    setShowProgressModal(false);
+    if (applied) {
+      setScheduleScenario(1);
+      setShowWhatChangedModal(true);
+    }
   };
 
   const isFridayUnderstaffed = scheduleScenario === 2;
@@ -122,11 +121,12 @@ export const ScheduleScreen: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <button
-              onClick={() => runProgressSimulation()}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#166534] text-white hover:bg-[#004c22] transition-all text-xs font-bold shadow-md"
+              onClick={() => void runProgressSimulation()}
+              disabled={isOptimizing}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#166534] text-white hover:bg-[#004c22] disabled:opacity-60 transition-all text-xs font-bold shadow-md"
             >
               <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
-              <span>Build My Schedule</span>
+              <span>{isOptimizing ? 'Building…' : 'Build My Schedule'}</span>
             </button>
             <button
               onClick={() => setScheduleScenario(1)}
@@ -209,12 +209,12 @@ export const ScheduleScreen: React.FC = () => {
               {/* Action buttons */}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => runProgressSimulation()}
+                  onClick={() => void runProgressSimulation()}
                   disabled={isOptimizing}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#166534] text-white hover:bg-[#004c22] transition-all text-xs font-semibold shadow-xs"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#166534] text-white hover:bg-[#004c22] disabled:opacity-60 transition-all text-xs font-semibold shadow-xs"
                 >
                   <span className="material-symbols-outlined text-[18px]">auto_fix_high</span>
-                  <span>Update Schedule</span>
+                  <span>{isOptimizing ? 'Updating…' : 'Update Schedule'}</span>
                 </button>
                 <button
                   onClick={() => window.print()}
@@ -347,17 +347,18 @@ export const ScheduleScreen: React.FC = () => {
                       )}
                     </div>
 
-                    {isFridayShort && (
-                      <button
-                        onClick={() => {
-                          runProgressSimulation();
-                        }}
-                        className="w-full mt-1 py-1 px-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-[13px]">build</span>
-                        <span>Auto-Fix Gap</span>
-                      </button>
-                    )}
+                      {isFridayShort && (
+                        <button
+                          onClick={() => {
+                            void runProgressSimulation();
+                          }}
+                          disabled={isOptimizing}
+                          className="w-full mt-1 py-1 px-2 rounded-md bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[13px]">build</span>
+                          <span>{isOptimizing ? 'Fixing…' : 'Auto-Fix Gap'}</span>
+                        </button>
+                      )}
                   </div>
                 );
               })}
@@ -442,8 +443,23 @@ export const ScheduleScreen: React.FC = () => {
                                   Morning
                                 </span>
                                 <span className="text-[10px] font-mono text-emerald-800 tabular-nums">
-                                  7:00–15:30
+                                  {cell.timeRange || '7:00–15:30'}
                                 </span>
+                              </div>
+                            ) : cell.shiftId === 'mid' ? (
+                              <div className="bg-sky-50 text-sky-950 p-2 rounded-xl border border-sky-200 flex flex-col gap-0.5 shadow-xs">
+                                <span className="text-[11px] font-bold flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-sky-600"></span>
+                                  {cell.label || 'Midday'}
+                                </span>
+                                <span className="text-[10px] font-mono text-sky-800 tabular-nums">
+                                  {cell.timeRange || ''}
+                                </span>
+                                {cell.note && (
+                                  <span className="text-[10px] text-sky-700 font-medium">
+                                    {cell.note}
+                                  </span>
+                                )}
                               </div>
                             ) : cell.shiftId === 'evening' ? (
                               <div className="bg-slate-100 text-slate-800 p-2 rounded-xl border border-slate-200 flex flex-col gap-0.5 shadow-xs">
@@ -452,7 +468,7 @@ export const ScheduleScreen: React.FC = () => {
                                   Evening
                                 </span>
                                 <span className="text-[10px] font-mono text-slate-700 tabular-nums">
-                                  15:00–23:30
+                                  {cell.timeRange || '15:00–23:30'}
                                 </span>
                               </div>
                             ) : cell.shiftId === 'leave' ? (

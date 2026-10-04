@@ -52,6 +52,8 @@ export interface ShiftCellData {
 
 export interface LeaveRequest {
   id: string;
+  /** Backend-branch leave id (present only for requests synced with the API). */
+  backendId?: string;
   employeeId: string;
   employeeName: string;
   employeeRole: string;
