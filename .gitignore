@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Python (merged backend/)
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.egg-info/
